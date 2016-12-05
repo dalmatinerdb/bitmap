@@ -1,3 +1,12 @@
+%%%-------------------------------------------------------------------
+%%% @author Heinz N. Gies <heinz@licenser.net>
+%%% @copyright (C) 2016, Heinz N. Gies
+%%% @doc Library for dealing with bitmaps in erlang.
+%%%
+%%% @end
+%%% Created :  5 Dec 2016 by Heinz N. Gies <heinz@licenser.net>
+%%%-------------------------------------------------------------------
+
 -module(bitmap).
 
 %% API exports
@@ -85,8 +94,8 @@ diff(_BitmapA, _BitmapB) ->
 -spec size(bitmap()) ->
                   pos_integer().
 
-size(Bitmap) ->
-    1.
+size(<<Size:64/unsigned, _/binary>>) ->
+    Size.
 
 %%====================================================================
 %% Internal functions
