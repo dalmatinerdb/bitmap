@@ -6,7 +6,8 @@
          set/2,
          unset/2,
          test/2,
-         diff/2
+         diff/2,
+         size/1
         ]).
 
 -type opts() ::
@@ -77,7 +78,15 @@ diff(Bitmap, Bitmap) ->
 diff(_BitmapA, _BitmapB) ->
     {error, bad_size}.
 
+%%--------------------------------------------------------------------
+%% @doc returns the size of a bitmap.,
+%% @end
+%%--------------------------------------------------------------------
+-spec size(bitmap()) ->
+                  pos_integer().
 
+size(Bitmap) ->
+    1.
 
 %%====================================================================
 %% Internal functions
