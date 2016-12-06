@@ -17,7 +17,8 @@
          test/2,
          diff/2,
          size/1,
-         visualize/4
+         display_diff/3,
+         display/2
         ]).
 
 -type opts() ::
@@ -29,7 +30,6 @@
 %% API functions
 %%====================================================================
 
-
 %%--------------------------------------------------------------------
 %% @doc Generates a new bitmap with the given options. The total size
 %%      will always be a multiople of 8, prefixed with a size.
@@ -39,7 +39,8 @@
                   {ok, bitmap()}.
 
 new([{size, Size}]) when Size > 0->
-    {ok, <<Size:64/unsigned>>}.
+    Bits = ceiling(Size / 8) * 8,
+    {ok, <<Size:64/unsigned, 0:Bits/unsigned>>}.
 
 %%--------------------------------------------------------------------
 %% @doc Sets a position in the bitmap.
@@ -48,8 +49,15 @@ new([{size, Size}]) when Size > 0->
 -spec set(Position :: pos_integer(), bitmap()) ->
                  {ok, bitmap()}.
 
-set(Position, Bitmap) when Position > 0->
-    {ok, Bitmap}.
+set(Position, <<Size:64/unsigned, Bitmap/binary>>)
+  when Position >= 0,
+       Position < Size ->
+    <<Head:Position/bitstring, _:1, Tail/bitstring>> = Bitmap,
+    Bitmap1 = <<Size:64/unsigned,
+                Head/bitstring,
+                1:1,
+                Tail/bitstring>>,
+    {ok, Bitmap1}.
 
 %%--------------------------------------------------------------------
 %% @doc Unsets a position in the bitmap.
@@ -58,8 +66,15 @@ set(Position, Bitmap) when Position > 0->
 -spec unset(Position :: pos_integer(), bitmap()) ->
                  {ok, bitmap()}.
 
-unset(Position, Bitmap) when Position > 0->
-    {ok, Bitmap}.
+unset(Position, <<Size:64/unsigned, Bitmap/binary>>)
+  when Position >= 0,
+       Position < Size ->
+    <<Head:Position/bitstring, _:1, Tail/bitstring>> = Bitmap,
+    Bitmap1 = <<Size:64/unsigned,
+                Head/bitstring,
+                0:1,
+                Tail/bitstring>>,
+    {ok, Bitmap1}.
 
 %%--------------------------------------------------------------------
 %% @doc Tests weather a position is set in the bitmap.
@@ -69,8 +84,11 @@ unset(Position, Bitmap) when Position > 0->
                    boolean() |
                    {error, out_of_range}.
 
-test(Position, _Bitmap) when Position > 0->
-    true.
+test(Position, <<Size:64/unsigned, Bitmap/binary>>)
+  when Position >= 0,
+       Position < Size ->
+    <<_Head:Position/bitstring, R:1, _Tail/bitstring>> = Bitmap,
+    R =:= 1.
 
 
 
@@ -85,8 +103,25 @@ test(Position, _Bitmap) when Position > 0->
 
 diff(Bitmap, Bitmap) ->
     {ok, {[], []}};
-diff(_BitmapA, _BitmapB) ->
-    {error, bad_size}.
+diff(<<Size:64/unsigned, BitmapL/binary>>,
+     <<Size:64/unsigned, BitmapR/binary>>) ->
+    diff_(0, BitmapL, BitmapR, [], []).
+
+diff_(_N, _Bitmap, _Bitmap, L, R) ->
+    {ok, {lists:reverse(L), lists:reverse(R)}};
+diff_(N,
+      <<X:1, BitmapL/bitstring>>,
+      <<X:1, BitmapR/bitstring>>, L, R) ->
+    diff_(N+1, BitmapL, BitmapR, L, R);
+diff_(N,
+      <<1:1, BitmapL/bitstring>>,
+      <<0:1, BitmapR/bitstring>>, L, R) ->
+    diff_(N+1, BitmapL, BitmapR, [N | L], R);
+diff_(N,
+      <<0:1, BitmapL/bitstring>>,
+      <<1:1, BitmapR/bitstring>>, L, R) ->
+    diff_(N+1, BitmapL, BitmapR, L, [N | R]).
+
 
 %%--------------------------------------------------------------------
 %% @doc returns the size of a bitmap.,
@@ -99,62 +134,88 @@ size(<<Size:64/unsigned, _/binary>>) ->
     Size.
 
 %%--------------------------------------------------------------------
-%% @doc returns the size of a bitmap.,
+%% @doc Visualizes the difference between to bitmaps.
 %% @end
 %%--------------------------------------------------------------------
 
+display_diff(<<Size:64, _/binary>> = LB, <<Size:64, _/binary>> = RB, Width) ->
+    {ok, {L, R}} = diff(LB, RB),
+    D = diff_view(Size, L, R),
+    print_grid(D, Width).
 
-visualize(Size, L, R, Count) ->
-    Log = trunc(math:log10(Size)) + 1,
-    Space = integer_to_list(Log),
-    S = "~" ++ Space ++ "b ",
-    %%header(Count, Space),
-    io:format(S, [0]),
-    visualize(0, Size, L, R, "~n"++S, 1, Count, Count).
-
+%%--------------------------------------------------------------------
+%% @doc Visualizes a bitmap.
+%% @end
+%%--------------------------------------------------------------------
+display(<<Size:64, X/binary>>, Width) ->
+    {V, _} = lists:split(Size, to_view(X, [])),
+    print_grid(V, Width).
 %%====================================================================
 %% Internal functions
 %%====================================================================
-visualize(Size, Size, _, _, _S, _N, _Line, _Count) ->
+diff_view(Size, L, R) ->
+    diff_to_view(0, Size, L, R, []).
+
+diff_to_view(_Size, _Size, _L, _R, Acc) ->
+    lists:reverse(Acc);
+diff_to_view(P, Size, [P | L], R, Acc) ->
+    diff_to_view(P + 1, Size, L, R, [cf:format("~!r<") | Acc]);
+diff_to_view(P, Size, L, [P | R], Acc) ->
+    diff_to_view(P + 1, Size, L, R, [cf:format("~!r>") | Acc]);
+diff_to_view(P, Size, L, R, Acc) ->
+    diff_to_view(P + 1, Size, L, R, [cf:format("~!g*") | Acc]).
+
+to_view(<<>>, Acc) ->
+    lists:reverse(Acc);
+to_view(<<1:1, R/bitstring>>, Acc) ->
+    to_view(R, [cf:format("~!g*") | Acc]);
+to_view(<<0:1, R/bitstring>>, Acc) ->
+    to_view(R, [cf:format("~!yo") | Acc]).
+
+print_grid(List, Width) ->
+    Log = trunc(math:log10(length(List))) + 1,
+    Space = integer_to_list(Log),
+    header(Space, Width),
+    S = "~" ++ Space ++ "b ~s~n",
+    print_grid(S, List, 0, Width).
+
+
+print_grid(_S, [], _N, _Count) ->
     ok;
-visualize(P, Size, L, R, S, N, 0, Count) ->
-    io:format(S, [N * Count]),
-    visualize(P, Size, L, R, S, N + 1, Count, Count);
-visualize(P, Size, [P | L], R, S, N, Pos, Count) ->
-    cf:print("~!r<"),
-    visualize(P + 1, Size, L, R, S, N, Pos - 1, Count);
-visualize(P, Size, L, [P | R], S, N, Pos, Count) ->
-    cf:print("~!r>"),
-    visualize(P + 1, Size, L, R, S, N, Pos - 1, Count);
-visualize(P, Size, L, R, S, N, Pos, Count) ->
-    cf:print("~!g*"),
-    visualize(P + 1, Size, L, R, S, N, Pos - 1, Count).
+print_grid(S, List, N, Count) when length(List) > Count ->
+    {H, T} = lists:split(Count, List),
+    io:format(S, [Count * N, H]),
+    print_grid(S, T, N+1, Count);
+print_grid(S, List, N, Count) ->
+    io:format(S, [Count * N, List]).
 
-%% header(Count, Space) ->
-%%     Log = trunc(math:log10(Count))+1,
-%%     S = "~n ~" ++ Space ++ "c",
-%%     header_(S, Count, Log, 0),
-%%     io:format("~n").
+header(Space, Width) ->
+    Log = trunc(math:log10(Width)),
+    io:format("Log: ~p~n", [Log]),
+    Pfx = io_lib:format("~" ++ Space ++ "c", [$\s]),
+    Idx = lists:seq(0, Width-1),
+    print_hdrs(Log, Idx, Pfx),
+    io:format("~n").
 
-%% header_(S, Count, 0, _) ->
-%%     ok;
-%% header_(S, Count, Log, N)  ->
-%%     header_(S, Count div 10, Log - 1, N + 1),
-%%     io:format(S, [$\s]),
-%%     header_line(N, Count, Log).
+print_hdrs(0, Idx, Pfx) ->
+    io:format("~s ~s", [Pfx, [integer_to_list(X rem 10) || X <- Idx]]);
+print_hdrs(N, Idx, Pfx) ->
+    io:format("~s ~s~n", [Pfx, remove_zero([to_s(N, X) || X <- Idx])]),
+    print_hdrs(N - 1, Idx, Pfx).
 
-%% header_line(N, Count, 0) ->
-%%     ok;
-%% header_line(N, Count, R) ->
-%%     header_line(N, Count, R - 1),
-%%     [io:format("~" ++ integer_to_list(round(math:pow(10, N))) ++ "c", [c(N, C)])
-%%      || C <- lists:seq(0, min(Count-1, 9))].
+to_s(N, X) ->
+    R =  (X div round(math:pow(10, N))) rem 10,
+    integer_to_list(R).
+remove_zero(["0" | R]) ->
+    [$\s | remove_zero(R)];
+remove_zero(R) ->
+    R.
 
-%% c(0, I) ->
-%%     [C] = integer_to_list(I),
-%%     C;
-%% c(_, 0) ->
-%%     $\s;
-%% c(_, I) ->
-%%     [C] = integer_to_list(I),
-%%     C.
+ceiling(X) when X < 0 ->
+    trunc(X);
+ceiling(X) ->
+    T = trunc(X),
+    case X - T == 0 of
+        true -> T;
+        false -> T + 1
+    end.

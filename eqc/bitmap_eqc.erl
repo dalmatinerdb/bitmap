@@ -17,7 +17,7 @@ size() ->
     ?LET(I, int(), abs(I) + 1).
 
 pos(Size) ->
-    choose(1, Size).
+    choose(0, Size - 1).
 
 prop_size() ->
     ?FORALL(Size, size(),
@@ -105,8 +105,8 @@ prop_one_diff() ->
        Size, size(),
        ?FORALL({B, Pos}, {bitmap(Size), pos(Size)},
                begin
-                   L = unset(Pos, B),
-                   R = set(Pos, B),
+                   L = set(Pos, B),
+                   R = unset(Pos, B),
                    bitmap:diff(L, R) =:= {ok, {[Pos], []}}
                end)).
 
