@@ -1,6 +1,6 @@
 {application, bitmap,
  [{description, "An erlang library for working with bitmaps"},
-  {vsn, "0.1.0"},
+  {vsn, "0.1.1"},
   {registered, []},
   {applications,
    [kernel,
@@ -9,8 +9,8 @@
    ]},
   {env,[]},
   {modules, []},
-
+  {pkg_name, ebitmap},
   {maintainers, ["Heinz N. Gies"]},
   {licenses, ["MIT"]},
-  {links, [{github, "https://github.com/dalmatinerdb/bitmap"]}
+  {links, [{"github", "https://github.com/dalmatinerdb/bitmap"}]}
  ]}.

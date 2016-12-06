@@ -112,15 +112,15 @@ diff_(_N, _Bitmap, _Bitmap, L, R) ->
 diff_(N,
       <<X:1, BitmapL/bitstring>>,
       <<X:1, BitmapR/bitstring>>, L, R) ->
-    diff_(N+1, BitmapL, BitmapR, L, R);
+    diff_(N + 1, BitmapL, BitmapR, L, R);
 diff_(N,
       <<1:1, BitmapL/bitstring>>,
       <<0:1, BitmapR/bitstring>>, L, R) ->
-    diff_(N+1, BitmapL, BitmapR, [N | L], R);
+    diff_(N + 1, BitmapL, BitmapR, [N | L], R);
 diff_(N,
       <<0:1, BitmapL/bitstring>>,
       <<1:1, BitmapR/bitstring>>, L, R) ->
-    diff_(N+1, BitmapL, BitmapR, L, [N | R]).
+    diff_(N + 1, BitmapL, BitmapR, L, [N | R]).
 
 
 %%--------------------------------------------------------------------
@@ -171,7 +171,7 @@ to_view(<<>>, Acc) ->
 to_view(<<1:1, R/bitstring>>, Acc) ->
     to_view(R, [cf:format("~!g*") | Acc]);
 to_view(<<0:1, R/bitstring>>, Acc) ->
-    to_view(R, [cf:format("~!yo") | Acc]).
+    to_view(R, [cf:format("~!y_") | Acc]).
 
 print_grid(List, Width) ->
     Log = trunc(math:log10(length(List))) + 1,
@@ -186,7 +186,7 @@ print_grid(_S, [], _N, _Count) ->
 print_grid(S, List, N, Count) when length(List) > Count ->
     {H, T} = lists:split(Count, List),
     io:format(S, [Count * N, H]),
-    print_grid(S, T, N+1, Count);
+    print_grid(S, T, N + 1, Count);
 print_grid(S, List, N, Count) ->
     io:format(S, [Count * N, List]).
 
