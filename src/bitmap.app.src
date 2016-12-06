@@ -1,15 +1,16 @@
 {application, bitmap,
- [{description, "An OTP library"},
+ [{description, "An erlang library for working with bitmaps"},
   {vsn, "0.1.0"},
   {registered, []},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    cf
    ]},
   {env,[]},
   {modules, []},
 
-  {maintainers, []},
-  {licenses, []},
-  {links, []}
+  {maintainers, ["Heinz N. Gies"]},
+  {licenses, ["MIT"]},
+  {links, [{github, "https://github.com/dalmatinerdb/bitmap"]}
  ]}.
