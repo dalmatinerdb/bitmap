@@ -177,7 +177,7 @@ print_grid(List, Width) ->
     Log = trunc(math:log10(length(List))) + 1,
     Space = integer_to_list(Log),
     header(Space, Width),
-    S = "~" ++ Space ++ "b ~s~n",
+    S = "~n~" ++ Space ++ "b ~s",
     print_grid(S, List, 0, Width).
 
 
@@ -191,12 +191,10 @@ print_grid(S, List, N, Count) ->
     io:format(S, [Count * N, List]).
 
 header(Space, Width) ->
-    Log = trunc(math:log10(Width)),
-    io:format("Log: ~p~n", [Log]),
+    Log = trunc(math:log10(Width - 1)),
     Pfx = io_lib:format("~" ++ Space ++ "c", [$\s]),
     Idx = lists:seq(0, Width-1),
-    print_hdrs(Log, Idx, Pfx),
-    io:format("~n").
+    print_hdrs(Log, Idx, Pfx).
 
 print_hdrs(0, Idx, Pfx) ->
     io:format("~s ~s", [Pfx, [integer_to_list(X rem 10) || X <- Idx]]);

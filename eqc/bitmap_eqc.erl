@@ -109,5 +109,3 @@ prop_one_diff() ->
                    R = unset(Pos, B),
                    bitmap:diff(L, R) =:= {ok, {[Pos], []}}
                end)).
-
-
