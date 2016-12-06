@@ -150,6 +150,7 @@ display_diff(<<Size:64, _/binary>> = LB, <<Size:64, _/binary>> = RB, Width) ->
 display(<<Size:64, X/binary>>, Width) ->
     {V, _} = lists:split(Size, to_view(X, [])),
     print_grid(V, Width).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
