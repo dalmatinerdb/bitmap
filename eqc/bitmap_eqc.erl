@@ -109,3 +109,37 @@ prop_one_diff() ->
                    R = unset(Pos, B),
                    bitmap:diff(L, R) =:= {ok, {[Pos], []}}
                end)).
+
+prop_union() ->
+    ?FORALL(
+       Size, size(),
+       ?FORALL(B, bitmap(Size),
+               begin
+                   B =:= bitmap:union(B, B)
+               end)).
+
+prop_intersection() ->
+    ?FORALL(
+       Size, size(),
+       ?FORALL(B, bitmap(Size),
+               begin
+                   B =:= bitmap:intersection(B, B)
+               end)).
+
+prop_union_set() ->
+    ?FORALL(
+       Size, size(),
+       ?FORALL({B, Pos}, {bitmap(Size), pos(Size)},
+               begin
+                   B1 = set(Pos, B),
+                   bitmap:test(Pos, bitmap:union(B, B1))
+               end)).
+
+prop_intersection_set() ->
+    ?FORALL(
+       Size, size(),
+       ?FORALL({B, Pos}, {bitmap(Size), pos(Size)},
+               begin
+                   B1 = unset(Pos, B),
+                   not bitmap:test(Pos, bitmap:intersection(B, B1))
+               end)).

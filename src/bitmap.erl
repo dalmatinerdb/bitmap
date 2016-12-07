@@ -12,6 +12,8 @@
 %% API exports
 -export([
          new/1,
+         union/2,
+         intersection/2,
          set/2,
          unset/2,
          test/2,
@@ -150,6 +152,25 @@ display_diff(<<Size:64, _/binary>> = LB, <<Size:64, _/binary>> = RB, Width) ->
 display(<<Size:64, X/binary>>, Width) ->
     {V, _} = lists:split(Size, to_view(X, [])),
     print_grid(V, Width).
+
+
+%%--------------------------------------------------------------------
+%% @doc Creates the intersection of two bitmaps (binary and)
+%% @end
+%%--------------------------------------------------------------------
+-spec intersection(bitmap(), bitmap()) -> bitmap().
+intersection(<<Size:64/unsigned, L:Size/unsigned, P/bitstring>>,
+             <<Size:64/unsigned, R:Size/unsigned, _/bitstring>>) ->
+    <<Size:64/unsigned, (L band R):Size/unsigned, P/bitstring>>.
+
+%%--------------------------------------------------------------------
+%% @doc Creates the union of two bitmaps (binary or)
+%% @end
+%%--------------------------------------------------------------------
+-spec union(bitmap(), bitmap()) -> bitmap().
+union(<<Size:64/unsigned, L:Size/unsigned, P/bitstring>>,
+      <<Size:64/unsigned, R:Size/unsigned, _/bitstring>>) ->
+    <<Size:64/unsigned, (L bor R):Size/unsigned, P/bitstring>>.
 
 %%====================================================================
 %% Internal functions
