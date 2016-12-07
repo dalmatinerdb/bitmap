@@ -19,6 +19,7 @@
          test/2,
          diff/2,
          size/1,
+         bytes/1,
          display_diff/3,
          display/2
         ]).
@@ -41,7 +42,10 @@
                   {ok, bitmap()}.
 
 new([{size, Size}]) when Size > 0->
-    Bits = ceiling(Size / 8) * 8,
+    %% bytes gives us the total bytes of a bitmap, including the
+    %% 8 byte size prefix, so we need to substract that.
+    Bytes = bitmap:bytes(Size) - 8,
+    Bits = Bytes * 8,
     {ok, <<Size:64/unsigned, 0:Bits/unsigned>>}.
 
 %%--------------------------------------------------------------------
@@ -124,6 +128,15 @@ diff_(N,
       <<1:1, BitmapR/bitstring>>, L, R) ->
     diff_(N + 1, BitmapL, BitmapR, L, [N | R]).
 
+
+%%--------------------------------------------------------------------
+%% @doc Size in bytes the bitmap will take up.
+%% @end
+%%--------------------------------------------------------------------
+-spec bytes(pos_integer()) ->
+                   pos_integer().
+bytes(Size) ->
+    ceiling(Size / 8) + 8.
 
 %%--------------------------------------------------------------------
 %% @doc returns the size of a bitmap.,
@@ -233,6 +246,7 @@ remove_zero(R) ->
 
 ceiling(X) when X < 0 ->
     trunc(X);
+
 ceiling(X) ->
     T = trunc(X),
     case X - T == 0 of

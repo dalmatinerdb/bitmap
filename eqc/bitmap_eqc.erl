@@ -26,6 +26,13 @@ prop_size() ->
                 Size =:= bitmap:size(B)
             end).
 
+prop_bytes() ->
+    ?FORALL(Size, size(),
+            begin
+                {ok, B} = bitmap:new([{size, Size}]),
+                bitmap:bytes(Size) =:= byte_size(B)
+            end).
+
 set(Pos, B0) ->
     {ok, B1} = bitmap:set(Pos, B0),
     B1.
