@@ -12,9 +12,11 @@
 %% API exports
 -export([
          new/1,
+         from_list/2,
          union/2,
          intersection/2,
          set/2,
+         set_many/2,
          unset/2,
          test/2,
          diff/2,
@@ -48,6 +50,16 @@ new([{size, Size}]) when Size > 0->
     Bits = Bytes * 8,
     {ok, <<Size:64/unsigned, 0:Bits/unsigned>>}.
 
+-spec from_list([non_neg_integer()], opts()) ->
+                       {ok, bitmap()}.
+
+from_list(Elements, [{size, Size}]) ->
+    R = from_list_(0, Elements, <<>>),
+    Bytes = bitmap:bytes(Size) - 8,
+    Bits = Bytes * 8,
+    Missing = Bits - bit_size(R),
+    {ok, <<Size:64/unsigned, R/bitstring, 0:Missing>>}.
+
 %%--------------------------------------------------------------------
 %% @doc Sets a position in the bitmap.
 %% @end
@@ -65,6 +77,10 @@ set(Position, <<Size:64/unsigned, Bitmap/binary>>)
                 Tail/bitstring>>,
     {ok, Bitmap1}.
 
+
+set_many(Positions, <<Size:64/unsigned, _/binary>> = Bitmap) ->
+    {ok, Mask} = from_list(Positions, [{size, Size}]),
+    union(Bitmap, Mask).
 %%--------------------------------------------------------------------
 %% @doc Unsets a position in the bitmap.
 %% @end
@@ -253,3 +269,13 @@ ceiling(X) ->
         true -> T;
         false -> T + 1
     end.
+
+from_list_(Pos, [X | R], Acc) when X > Pos ->
+    Missing = X - Pos,
+    from_list_(X + 1, R, <<Acc/bitstring, 0:Missing, 1:1>>);
+
+from_list_(Pos, [Pos | R], Acc) ->
+    from_list_(Pos + 1, R, <<Acc/bitstring, 1:1>>);
+
+from_list_(_, [], R) ->
+    R.

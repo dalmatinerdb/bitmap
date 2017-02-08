@@ -19,6 +19,9 @@ size() ->
 pos(Size) ->
     choose(0, Size - 1).
 
+poss(Size) ->
+    ?LET(L, list(pos(Size)), lists:usort(L)).
+
 prop_size() ->
     ?FORALL(Size, size(),
             begin
@@ -87,6 +90,18 @@ prop_seti() ->
                begin
                    B1 = set(Pos, B),
                    bitmap:test(Pos, B1)
+               end)).
+
+prop_set_many() ->
+    ?FORALL(
+       Size, size(),
+       ?FORALL(Pos, poss(Size),
+               begin
+                   Opts = [{size, Size}],
+                   {ok, B} = bitmap:new(Opts),
+                   B1 = lists:foldl(fun set/2, B, Pos),
+                   {ok, B2} = bitmap:from_list(Pos, Opts),
+                   B1 =:= B2
                end)).
 
 prop_unseti() ->
