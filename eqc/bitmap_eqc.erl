@@ -104,6 +104,16 @@ prop_set_many() ->
                    B1 =:= B2
                end)).
 
+prop_to_list_from_list() ->
+    ?FORALL(
+       Size, size(),
+       ?FORALL(Pos, poss(Size),
+               begin
+                   {ok, B} = bitmap:from_list(Pos, [{size, Size}]),
+                   Pos2 = bitmap:to_list(B),
+                   Pos =:= Pos2
+               end)).
+
 prop_unseti() ->
     ?FORALL(
        Size, size(),

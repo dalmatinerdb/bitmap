@@ -13,6 +13,7 @@
 -export([
          new/1,
          from_list/2,
+         to_list/1,
          union/2,
          intersection/2,
          set/2,
@@ -50,6 +51,11 @@ new([{size, Size}]) when Size > 0->
     Bits = Bytes * 8,
     {ok, <<Size:64/unsigned, 0:Bits/unsigned>>}.
 
+%%--------------------------------------------------------------------
+%% @doc Creates a bitmap from a list of set bits.
+%% @end
+%%--------------------------------------------------------------------
+
 -spec from_list([non_neg_integer()], opts()) ->
                        {ok, bitmap()}.
 
@@ -60,11 +66,22 @@ from_list(Elements, [{size, Size}]) ->
     Missing = Bits - bit_size(R),
     {ok, <<Size:64/unsigned, R/bitstring, 0:Missing>>}.
 
+to_list(<<Size:64/unsigned, Bitmap:Size/bitstring, _/bitstring>>) ->
+    to_list(Bitmap, 0, []).
+
+to_list(<<>>, _, Acc) ->
+    lists:reverse(Acc);
+to_list(<<0:1, R/bitstring>>, N, Acc) ->
+    to_list(R, N + 1, Acc);
+to_list(<<1:1, R/bitstring>>, N, Acc) ->
+    to_list(R, N + 1, [N | Acc]).
+
+
 %%--------------------------------------------------------------------
 %% @doc Sets a position in the bitmap.
 %% @end
 %%--------------------------------------------------------------------
--spec set(Position :: pos_integer(), bitmap()) ->
+-spec set(Position :: non_neg_integer(), bitmap()) ->
                  {ok, bitmap()}.
 
 set(Position, <<Size:64/unsigned, Bitmap/binary>>)
@@ -77,10 +94,16 @@ set(Position, <<Size:64/unsigned, Bitmap/binary>>)
                 Tail/bitstring>>,
     {ok, Bitmap1}.
 
-
+%%--------------------------------------------------------------------
+%% @doc Sets many psoitions in a bitmap (significantly faster then
+%% using set multiple times!)
+%% @end
+%%--------------------------------------------------------------------
+-spec set_many([non_neg_integer()], bitmap()) ->
+                      {ok, bitmap()}.
 set_many(Positions, <<Size:64/unsigned, _/binary>> = Bitmap) ->
     {ok, Mask} = from_list(Positions, [{size, Size}]),
-    union(Bitmap, Mask).
+    {ok, union(Bitmap, Mask)}.
 %%--------------------------------------------------------------------
 %% @doc Unsets a position in the bitmap.
 %% @end
