@@ -2,9 +2,17 @@ variables:
   ERL_LIBS: "./libs"
 
 stages:
+  - lint
   - dialyzer
   - eunit
   - eqc
+
+lint:
+  stage: lint
+  script:
+    - ./rebar3 as lint lint
+  tags:
+    - erlagn-19
 
 dialyzer:
   stage: dialyzer
@@ -12,7 +20,6 @@ dialyzer:
     - ./rebar3 dialyzer
   tags:
     - erlagn-19
-
 
 eunit:
   stage: eunit
